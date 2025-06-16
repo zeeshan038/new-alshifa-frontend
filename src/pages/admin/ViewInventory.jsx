@@ -52,9 +52,8 @@ const ViewInventory = () => {
 
   const handleView = async (medicineId) => {
     try {
-      const response = await axios.get(`${BASE_URL}/api/medicine/get-med/${medicineId}`);
+      const response = await axios.get(`/api/medicine/get-med/${medicineId}`);
       if (response.data.status) {
-        // Navigate to the specific inventory detail page
         window.location.href = `/inventory/${medicineId}`;
       } else {
         message.error('Failed to fetch medicine details');
