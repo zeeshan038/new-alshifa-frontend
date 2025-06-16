@@ -78,7 +78,7 @@ const AdminLayout = ({ children }) => {
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
         breakpoint="lg"
-        collapsedWidth="80"
+        collapsedWidth="0"
         style={{
           backgroundColor: '#2f3f50',
           overflow: 'auto',
@@ -102,7 +102,7 @@ const AdminLayout = ({ children }) => {
           <p>v 1.1.2</p>
         </div>
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+      <Layout style={{ marginLeft: collapsed ? 0 : 200, transition: 'margin-left 0.2s' }}>
         <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: '24px' }}>
           <Button
             type="text"
@@ -121,7 +121,7 @@ const AdminLayout = ({ children }) => {
        <Button type="primary" style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}>Home</Button>
        </Link>
         </Header>
-        <Content style={{ margin: '24px 16px', overflow: 'initial' }}>
+        <Content style={{ margin: `24px ${collapsed ? 0 : 16}px`, overflow: 'initial' }}>
           <div
             style={{
               padding: 24,

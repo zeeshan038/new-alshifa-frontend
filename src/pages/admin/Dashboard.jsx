@@ -40,6 +40,16 @@ const Dashboard = () => {
   const [recentProducts, setRecentProducts] = useState([]);
   const [loadingSales, setLoadingSales] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [profitLossData, setProfitLossData] = useState({
+    todayProfit: 0,
+    todayLoss: 0,
+    monthlyProfit: 0,
+    monthlyLoss: 0,
+    overallProfit: 0,
+    overallLoss: 0,
+  });
+  const [loadingProfitLoss, setLoadingProfitLoss] = useState(true);
+  const [profitLossError, setProfitLossError] = useState(null);
 
   useEffect(() => {
     const fetchStockSummary = async () => {
@@ -84,8 +94,22 @@ const Dashboard = () => {
       }
     };
 
+    const fetchProfitLoss = async () => {
+      try {
+        setLoadingProfitLoss(true);
+        const response = await axios.get(`${BASE_URL}/api/sale/record`);
+        setProfitLossData(response.data);
+      } catch (error) {
+        setProfitLossError('Error fetching profit/loss data');
+        console.error('Error fetching profit/loss data:', error);
+      } finally {
+        setLoadingProfitLoss(false);
+      }
+    };
+
     fetchStockSummary();
     fetchRecentSales();
+    fetchProfitLoss();
   }, []);
 
 
@@ -205,7 +229,7 @@ const Dashboard = () => {
                   style={{ borderTop: '4px solid #facc15', textAlign: 'center' }}
                 >
                   <FileTextOutlined style={{ fontSize: '40px', color: '#facc15', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>Rs. 8,55,875</h3>
+                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingProfitLoss ? 'Loading...' : profitLossData.overallProfit}</h3>
                   <Button type="link" className='text-3xl' style={{  color: '#b49200' }}>Profit</Button>
                 </Card>
               </Col>
@@ -258,25 +282,14 @@ const Dashboard = () => {
                   <Button type="link" className='text-3xl' style={{  color: '#b49200' }}>Stock Out</Button>
                 </Card>
               </Col>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #60a5fa', textAlign: 'center' }}
-                >
-                  <MedicineBoxOutlined style={{ fontSize: '40px', color: '#60a5fa', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalAvailableStock}</h3>
-
-                  <Button type="link" className='text-3xl' style={{  color:'#333'}}>Available Stocks</Button>
-                </Card>
-              </Col>
+            
               <Col xs={24} sm={12} md={12} lg={6}>
                 <Card 
                   hoverable
                   bordered={false}
                   style={{ borderTop: '4px solid #ef4444', textAlign: 'center' }}
                 >
-                  <BellOutlined style={{ fontSize: '40px', color: '#ef4444', marginBottom: '12px' }} />
+                  <WarningOutlined style={{ fontSize: '40px', color: '#ef4444', marginBottom: '12px' }} />
                   <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalShortExpiry}</h3>
                   <Button type="link" style={{ color: '#ef4444' }}>Short Expirey</Button>
                 </Card>
