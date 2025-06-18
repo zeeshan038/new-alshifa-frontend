@@ -135,18 +135,20 @@ const Home = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4">
       <Toaster />
       {/* Search Bar and Cart Button */}
-      <div className="flex justify-between items-center mb-4">
-        <SearchBar onSearch={handleSearch} />
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+        <div className="w-full sm:w-auto">
+          <SearchBar onSearch={handleSearch} />
+        </div>
         <button
           onClick={() => setShowCart(!showCart)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+          className="w-full sm:w-auto bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center justify-center"
         >
           <span className="mr-2">Cart</span>
           {selectedMedicines.length > 0 && (
-            <span className="bg-white text-blue-600 rounded-full w-6 h-6 flex items-center justify-center">
+            <span className="bg-white text-red-600 rounded-full w-6 h-6 flex items-center justify-center">
               {selectedMedicines.length}
             </span>
           )}
@@ -156,7 +158,7 @@ const Home = () => {
       {/* Cart Sidebar */}
       {showCart && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-          <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-lg p-4 overflow-y-auto">
+          <div className="absolute right-0 top-0 h-full w-full sm:w-80 md:w-96 bg-white shadow-lg p-4 overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">Selected Medicines</h2>
               <button
@@ -175,33 +177,33 @@ const Home = () => {
                   {selectedMedicines.map((medicine) => (
                     <div key={medicine.medicineId} className="bg-gray-50 p-3 rounded-lg">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium">{medicine.name}</h3>
+                        <h3 className="font-medium text-sm sm:text-base">{medicine.name}</h3>
                         <button
                           onClick={() => handleRemoveFromCart(medicine.medicineId)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 text-sm sm:text-base"
                         >
                           Remove
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-sm text-gray-600">Quantity</label>
+                          <label className="text-xs sm:text-sm text-gray-600">Quantity</label>
                           <input
                             type="number"
                             min="1"
                             value={medicine.quantity}
                             onChange={(e) => handleUpdateQuantity(medicine.medicineId, parseInt(e.target.value))}
-                            className="w-full p-1 border rounded"
+                            className="w-full p-1 border rounded text-sm sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="text-sm text-gray-600">Price (Rs.)</label>
+                          <label className="text-xs sm:text-sm text-gray-600">Price (Rs.)</label>
                           <input
                             type="number"
                             min="0"
                             value={medicine.sellingPrice}
                             onChange={(e) => handleUpdatePrice(medicine.medicineId, parseInt(e.target.value))}
-                            className="w-full p-1 border rounded"
+                            className="w-full p-1 border rounded text-sm sm:text-base"
                           />
                         </div>
                       </div>
@@ -212,7 +214,7 @@ const Home = () => {
                   <button
                     onClick={handleSellMedicines}
                     disabled={isSelling}
-                    className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                    className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base"
                   >
                     {isSelling ? 'Processing...' : 'Sell Medicines'}
                   </button>
@@ -228,38 +230,42 @@ const Home = () => {
       {error && <div className="text-center mt-4 text-red-500">Error loading medicines: {error.message || 'Unknown error'}</div>}
 
       {/* Medicine Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         {loading ? (
           Array.from({ length: itemsPerPage }).map((_, index) => (
             <MedicineCardSkeleton key={index} />
           ))
         ) : !error && currentItems.length > 0 ? (
           currentItems.map(medicine => (
-            <div key={medicine._id} className="bg-blue-50 mt-10 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105 overflow-hidden text-center">
-              <img 
-                src={medicine.image}
-                alt={medicine.name}
-                className="w-full h-48 object-cover mb-4 rounded-t-xl"
-              />
-              <div className="p-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-2 truncate">{medicine.name}</h2>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{medicine.description}</p>
-                <p className="text-blue-700 font-extrabold text-lg mb-1">Rs: {medicine.price}</p>
-                <p className="text-gray-500 text-sm flex items-center justify-center">
-                  Quantity: {medicine.quantity}
-                  {medicine.quantity > 0 ? (
-                    <span className="ml-2 text-green-600">✔️ In Stock</span>
-                  ) : (
-                    <span className="ml-2 text-red-600">❌ Out of Stock</span>
-                  )}
-                </p>
-                <button
-                  onClick={() => handleAddToCart(medicine)}
-                  disabled={medicine.quantity === 0}
-                  className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Add to Cart
-                </button>
+            <div key={medicine._id} className="bg-blue-50 mt-4 sm:mt-10 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105 overflow-hidden text-center flex flex-col h-full">
+              <div className="aspect-[16/9] relative max-h-[200px]">
+                <img 
+                  src={medicine.image}
+                  alt={medicine.name}
+                  className="w-full h-full object-cover rounded-t-xl"
+                />
+              </div>
+              <div className="p-3 sm:p-4 flex flex-col flex-grow">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 truncate">{medicine.name}</h2>
+                <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 flex-grow">{medicine.description}</p>
+                <div className="mt-auto">
+                  <p className="text-blue-700 font-extrabold text-base sm:text-lg mb-1">Rs: {medicine.price}</p>
+                  <p className="text-gray-500 text-xs sm:text-sm flex items-center justify-center mb-3">
+                    Quantity: {medicine.quantity}
+                    {medicine.quantity > 0 ? (
+                      <span className="ml-2 text-green-600">✔️ In Stock</span>
+                    ) : (
+                      <span className="ml-2 text-red-600">❌ Out of Stock</span>
+                    )}
+                  </p>
+                  <button
+                    onClick={() => handleAddToCart(medicine)}
+                    disabled={medicine.quantity === 0}
+                    className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -270,12 +276,12 @@ const Home = () => {
 
       {/* Pagination Controls */}
       {!loading && !error && totalPages > 1 && (
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center mt-6 flex-wrap gap-2">
           {Array.from({ length: totalPages }, (_, i) => (
             <button
               key={i + 1}
               onClick={() => paginate(i + 1)}
-              className={`mx-1 px-4 py-2 rounded-lg font-semibold ${currentPage === i + 1 ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              className={`px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm sm:text-base ${currentPage === i + 1 ? 'bg-red-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
             >
               {i + 1}
             </button>
