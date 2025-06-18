@@ -111,12 +111,23 @@ const SpecificInventory = () => {
         e.preventDefault();
         setIsUpdating(true);
     
-        let imageUrlToUse = formData.image; 
-
         try {
-            // Ensure price is parsed as an integer before sending
-            const updatedData = { ...formData, price: parseInt(formData.price), image: imageUrlToUse };
-            const response = await axios.put(`${BASE_URL}/api/medicine/edit-med/${id}`, updatedData);
+            // Create update data object without image if it's empty
+            const updateData = {
+                name: formData.name,
+                description: formData.description,
+                brand: formData.brand,
+                price: parseInt(formData.price),
+                category: formData.category,
+                manufacturer: formData.manufacturer
+            };
+
+            // Only add image to update data if it exists
+            if (formData.image) {
+                updateData.image = formData.image;
+            }
+
+            const response = await axios.put(`${BASE_URL}/api/medicine/edit-med/${id}`, updateData);
             console.log("res", response);
             if (response.data.status) {
                 toast.success(response.data.msg || 'Medicine updated successfully!');
@@ -221,7 +232,7 @@ const SpecificInventory = () => {
                 {/* Image Section */}
                 <div className="mb-6 sm:mb-8 relative">
                     <img 
-                        src={selectedFile ? URL.createObjectURL(selectedFile) : (formData.image || 'https://via.placeholder.com/150')}
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : (formData.image || 'https://placehold.co/600x400?text=No+Image+Available')}
                         alt={formData.name}
                         className="w-full h-48 sm:h-64 object-contain rounded-lg shadow-lg"
                     />

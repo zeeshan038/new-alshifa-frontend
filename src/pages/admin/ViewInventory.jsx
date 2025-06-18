@@ -8,8 +8,10 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_URL } from '../../constant';
+import { useNavigate } from 'react-router-dom';
 
 const ViewInventory = () => {
+  const navigate = useNavigate();
   const [stockSummary, setStockSummary] = useState({
     totalStocks: 0,
     totalStockIn: 0,
@@ -52,12 +54,8 @@ const ViewInventory = () => {
 
   const handleView = async (medicineId) => {
     try {
-      const response = await axios.get(`/api/medicine/get-med/${medicineId}`);
-      if (response.data.status) {
-        window.location.href = `/inventory/${medicineId}`;
-      } else {
-        message.error('Failed to fetch medicine details');
-      }
+      const response = await axios.get(`${BASE_URL}/api/medicine/get-med-inven/${medicineId}`);
+      navigate(`/inventory/${medicineId}`);
     } catch (error) {
       console.error('Error fetching medicine details:', error);
       message.error('Error fetching medicine details');

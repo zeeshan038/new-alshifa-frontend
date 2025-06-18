@@ -1,23 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Button, theme, Card, Row, Col, Select, Table, Space, Tag, Statistic, Typography, Progress } from 'antd';
 import { 
-  DashboardOutlined,
   AppstoreOutlined,
-  FileTextOutlined,
-  SettingOutlined,
-  UserOutlined,
-  BellOutlined,
-  MessageOutlined,
   MedicineBoxOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   PlusCircleOutlined,
   MinusCircleOutlined,
   WarningOutlined,
-  DollarCircleOutlined, 
-  LineChartOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined
+  DollarCircleOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_URL } from '../../constant';
@@ -140,8 +129,6 @@ const Dashboard = () => {
     fetchProfitLoss();
 
   }, []);
-
-
 
   const renderMenuItems = (items) => {
     return items.map(item => {

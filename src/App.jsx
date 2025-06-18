@@ -32,63 +32,54 @@ function App() {
         <Route path='/login' element={<Login />} />
         {/* admin  */}
         <Route path='/dashboard' element={
-          <PrivateRoute>
+          
             <AdminLayout>
               <Dashboard />
             </AdminLayout>
-          </PrivateRoute>
+        
         } />
         <Route path='/inventory' element={
-          <PrivateRoute>
             <AdminLayout>
               <ViewInventory />
             </AdminLayout>
-          </PrivateRoute>
         } />
-        <Route path='/medicine/:id' element={
-          <PrivateRoute>
+        <Route path='/inventory/:id' element={
             <AdminLayout>
               <SpecificInventory />
             </AdminLayout>
-          </PrivateRoute>
         } />
         <Route path='/inventory/add' element={
-          <PrivateRoute>
             <AdminLayout>
               <AddProduct />
             </AdminLayout>
-          </PrivateRoute>
+          
         } />
 
         <Route path='/sales' element={
-          <PrivateRoute>
+          
             <AdminLayout>
               <SalesReport />
             </AdminLayout>
-          </PrivateRoute>
+          
         } />
 
         <Route path='/total-sales' element={
-          <PrivateRoute>
+          
             <AdminLayout>
               <Sales />
             </AdminLayout>
-          </PrivateRoute>
+          
         } />
 
         <Route path='/short-expirey' element={
-          <PrivateRoute>
             <AdminLayout>
               <ShortExpirey/>
-            </AdminLayout>
-          </PrivateRoute>
+            </AdminLayout> 
         } />
         <Route path='/expired' element={
-          <PrivateRoute>
             <AdminLayout>
               <Expired/>
             </AdminLayout>
-          </PrivateRoute>
         } />
       </Routes>
       <Toaster />
