@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Input, Card, theme } from 'antd';
+import { Table, Input, Card, theme, Row, Col } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_URL } from '../../constant';
@@ -94,19 +94,23 @@ const ShortExpirey = () => {
         borderRadius: borderRadiusLG,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', margin: 0 }}>Medicines to be Expired</h2>
-        <Search
-          placeholder="Search by medicine name"
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          style={{ width: 300 }}
-          onSearch={handleSearch}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-      </div>
-      <Card bordered={false}>
+      <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={12}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', margin: 0 }}>Medicines to be Expired</h2>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Search
+            placeholder="Search by medicine name"
+            allowClear
+            enterButton={<SearchOutlined />}
+            size="large"
+            style={{ width: '100%' }}
+            onSearch={handleSearch}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </Col>
+      </Row>
+      <Card bordered={false} style={{ width: '100%' }}>
         <Table
           columns={columns}
           dataSource={expiryData}
@@ -118,6 +122,7 @@ const ShortExpirey = () => {
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
           }}
           onChange={handleTableChange}
+          scroll={{ x: 'max-content' }}
         />
       </Card>
     </div>

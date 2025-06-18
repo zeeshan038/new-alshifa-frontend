@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import axios from 'axios'
+import { Link, useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../constant';
+import axios from 'axios';
+import toast, { Toaster } from 'react-hot-toast';
+
+// imports
 import MedicineCardSkeleton from '../components/MedicineCardSkeleton';
 import SearchBar from '../components/SearchBar';
-import { Link } from 'react-router-dom';
 
 const Home = () => {
+  const navigate = useNavigate();
   console.log("Home component rendered");
   const [medicines, setMedicines] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -13,7 +17,10 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const itemsPerPage = 8; 
+  const [selectedMedicines, setSelectedMedicines] = useState([]);
+  const [showCart, setShowCart] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
+  const itemsPerPage = 8;
 
   const handleSearch = useCallback((term) => {
     setCurrentSearchTerm(term);
@@ -39,16 +46,182 @@ const Home = () => {
     fetchMedicines();
   }, [currentPage, currentSearchTerm]);
 
+  const handleAddToCart = (medicine) => {
+    const existingMedicine = selectedMedicines.find(m => m.medicineId === medicine._id);
+    if (existingMedicine) {
+      setSelectedMedicines(prev => prev.map(m => 
+        m.medicineId === medicine._id 
+          ? { ...m, quantity: m.quantity + 1 }
+          : m
+      ));
+    } else {
+      setSelectedMedicines(prev => [...prev, {
+        medicineId: medicine._id,
+        quantity: 1,
+        sellingPrice: medicine.price,
+        name: medicine.name
+      }]);
+    }
+    toast.success('Medicine added to cart');
+  };
+
+  const handleRemoveFromCart = (medicineId) => {
+    setSelectedMedicines(prev => prev.filter(m => m.medicineId !== medicineId));
+    toast.success('Medicine removed from cart');
+  };
+
+  const handleUpdateQuantity = (medicineId, newQuantity) => {
+    if (newQuantity < 1) return;
+    setSelectedMedicines(prev => prev.map(m => 
+      m.medicineId === medicineId 
+        ? { ...m, quantity: newQuantity }
+        : m
+    ));
+  };
+
+  const handleUpdatePrice = (medicineId, newPrice) => {
+    if (newPrice < 0) return;
+    setSelectedMedicines(prev => prev.map(m => 
+      m.medicineId === medicineId 
+        ? { ...m, sellingPrice: newPrice }
+        : m
+    ));
+  };
+
+  const handleSellMedicines = async () => {
+    if (selectedMedicines.length === 0) {
+      toast.error('Please add medicines to cart first');
+      return;
+    }
+
+    setIsSelling(true);
+    try {
+      const response = await axios.post(`${BASE_URL}/api/sale/sell-med`, {
+        medicines: selectedMedicines.map(({ medicineId, quantity, sellingPrice }) => ({
+          medicineId,
+          quantity,
+          sellingPrice
+        }))
+      });
+
+      console.log("res", response);
+
+      if (response.status == 200) {
+        toast.success('Medicines sold successfully!', {
+          duration: 2000,
+          position: 'top-center',
+          style: {
+            background: '#4ade80',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+          },
+        });
+        
+        setSelectedMedicines([]);
+        setShowCart(false);
+        navigate('/');
+      }
+    } catch (err) {
+      toast.error('Error selling medicines');
+      console.error('Error selling medicines:', err);
+    } finally {
+      setIsSelling(false);
+    }
+  };
+
   const currentItems = medicines;
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="container mx-auto p-4 ">
-      {/* Search Bar */}
-      <div className="flex justify-end mb-4">
+    <div className="container mx-auto p-4">
+      <Toaster />
+      {/* Search Bar and Cart Button */}
+      <div className="flex justify-between items-center mb-4">
         <SearchBar onSearch={handleSearch} />
+        <button
+          onClick={() => setShowCart(!showCart)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+        >
+          <span className="mr-2">Cart</span>
+          {selectedMedicines.length > 0 && (
+            <span className="bg-white text-blue-600 rounded-full w-6 h-6 flex items-center justify-center">
+              {selectedMedicines.length}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Cart Sidebar */}
+      {showCart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+          <div className="absolute right-0 top-0 h-full w-96 bg-white shadow-lg p-4 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Selected Medicines</h2>
+              <button
+                onClick={() => setShowCart(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {selectedMedicines.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No medicines selected</p>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {selectedMedicines.map((medicine) => (
+                    <div key={medicine.medicineId} className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{medicine.name}</h3>
+                        <button
+                          onClick={() => handleRemoveFromCart(medicine.medicineId)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-sm text-gray-600">Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={medicine.quantity}
+                            onChange={(e) => handleUpdateQuantity(medicine.medicineId, parseInt(e.target.value))}
+                            className="w-full p-1 border rounded"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-gray-600">Price (Rs.)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={medicine.sellingPrice}
+                            onChange={(e) => handleUpdatePrice(medicine.medicineId, parseInt(e.target.value))}
+                            className="w-full p-1 border rounded"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleSellMedicines}
+                    disabled={isSelling}
+                    className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {isSelling ? 'Processing...' : 'Sell Medicines'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Loading/Error Messages */}
       {loading && <div className="text-center mt-4">Loading medicines...</div>}
@@ -57,39 +230,42 @@ const Home = () => {
       {/* Medicine Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {loading ? (
-          // Render skeletons when loading
           Array.from({ length: itemsPerPage }).map((_, index) => (
             <MedicineCardSkeleton key={index} />
           ))
         ) : !error && currentItems.length > 0 ? (
-          // Render actual medicine cards when loaded and not error
           currentItems.map(medicine => (
-            <Link to={`/medicine/${medicine._id}`} key={medicine._id} className="block">
-              <div className="bg-blue-50 mt-10 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105 overflow-hidden text-center">
-                <img 
-                  src={medicine.image}
-                  alt={medicine.name}
-                  className="w-full h-48 object-cover mb-4 rounded-t-xl"
-                />
-                <div className="p-4">
-                  <h2 className="text-xl font-bold text-gray-800 mb-2 truncate">{medicine.name}</h2>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{medicine.description}</p>
-                  <p className="text-blue-700 font-extrabold text-lg mb-1">Rs: {medicine.price}</p>
-                  <p className="text-gray-500 text-sm flex items-center justify-center">
-                    Quantity: {medicine.quantity}
-                    {medicine.quantity > 0 ? (
-                      <span className="ml-2 text-green-600">✔️ In Stock</span>
-                    ) : (
-                      <span className="ml-2 text-red-600">❌ Out of Stock</span>
-                    )}
-                  </p>
-                </div>
+            <div key={medicine._id} className="bg-blue-50 mt-10 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 transform hover:scale-105 overflow-hidden text-center">
+              <img 
+                src={medicine.image}
+                alt={medicine.name}
+                className="w-full h-48 object-cover mb-4 rounded-t-xl"
+              />
+              <div className="p-4">
+                <h2 className="text-xl font-bold text-gray-800 mb-2 truncate">{medicine.name}</h2>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{medicine.description}</p>
+                <p className="text-blue-700 font-extrabold text-lg mb-1">Rs: {medicine.price}</p>
+                <p className="text-gray-500 text-sm flex items-center justify-center">
+                  Quantity: {medicine.quantity}
+                  {medicine.quantity > 0 ? (
+                    <span className="ml-2 text-green-600">✔️ In Stock</span>
+                  ) : (
+                    <span className="ml-2 text-red-600">❌ Out of Stock</span>
+                  )}
+                </p>
+                <button
+                  onClick={() => handleAddToCart(medicine)}
+                  disabled={medicine.quantity === 0}
+                  className="mt-3 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add to Cart
+                </button>
               </div>
-            </Link>
+            </div>
           ))
         ) : !loading && !error && currentItems.length === 0 ? (
           <div className="col-span-full text-center text-gray-500 mt-8">No medicines found.</div>
-        ) : null} {/* Render nothing if loading is false, error is true, and there are no items to show, or other unhandled states */}
+        ) : null}
       </div>
 
       {/* Pagination Controls */}
@@ -110,4 +286,4 @@ const Home = () => {
   );
 };
 
-export default Home
+export default Home;

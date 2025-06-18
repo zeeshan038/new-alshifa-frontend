@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, theme, Card, Row, Col, Select, Table, Space, Tag } from 'antd';
+import { Layout, Menu, Button, theme, Card, Row, Col, Select, Table, Space, Tag, Statistic, Typography, Progress } from 'antd';
 import { 
   DashboardOutlined,
   AppstoreOutlined,
@@ -15,13 +15,16 @@ import {
   MinusCircleOutlined,
   WarningOutlined,
   DollarCircleOutlined, 
-  LineChartOutlined 
+  LineChartOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { BASE_URL } from '../../constant';
 
 const { Header, Sider, Content } = Layout;
 const { SubMenu } = Menu;
+const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -50,6 +53,12 @@ const Dashboard = () => {
   });
   const [loadingProfitLoss, setLoadingProfitLoss] = useState(true);
   const [profitLossError, setProfitLossError] = useState(null);
+  const [previousMonthData, setPreviousMonthData] = useState({
+    totalStocks: 0,
+    overallProfit: 0,
+    totalAvailableStock: 0,
+    totalExpired: 0
+  });
 
   useEffect(() => {
     const fetchStockSummary = async () => {
@@ -69,22 +78,40 @@ const Dashboard = () => {
       try {
         const response = await axios.get(`${BASE_URL}/api/sale/sales`);
         if (response.data.status) {
-          const formattedSales = response.data.sales
-            .map((sale, index) => ({
-              key: sale._id,
-              saleId: `S${index + 1}`,
-              medicine: sale.medicineId.name,
-              brand: sale.brand,
-              batchNumber: sale.batchId.batchNumber,
-              quantity: sale.quantitySold,
-              purchasePrice: sale.purchasePrice,
-              sellingPrice: sale.sellingPrice,
-              profit: sale.profit,
-              category: sale.category,
-              date: new Date(sale.createdAt).toLocaleDateString(),
-              status: 'Sold'
-            }))
-            .slice(0, 10); 
+          // Group sales by _id
+          const salesMap = new Map();
+          
+          response.data.sales.forEach(sale => {
+            if (!salesMap.has(sale._id)) {
+              salesMap.set(sale._id, {
+                key: sale._id,
+                saleId: `S${salesMap.size + 1}`,
+                medicine: sale.medicine,
+                batchNumber: sale.batchNumber,
+                quantity: sale.item.quantitySold,
+                purchasePrice: sale.item.purchasePrice,
+                sellingPrice: sale.item.sellingPrice,
+                profit: sale.item.profit,
+                category: sale.item.category,
+                brand: sale.item.brand,
+                date: new Date(sale.createdAt).toLocaleDateString(),
+                time: new Date(sale.createdAt).toLocaleTimeString(),
+                status: 'Sold'
+              });
+            } else {
+              const existingSale = salesMap.get(sale._id);
+              existingSale.medicine = `${existingSale.medicine} x ${sale.medicine}`;
+              existingSale.batchNumber = `${existingSale.batchNumber} x ${sale.batchNumber}`;
+              existingSale.quantity = `${existingSale.quantity} x ${sale.item.quantitySold}`;
+              existingSale.purchasePrice = `${existingSale.purchasePrice} x ${sale.item.purchasePrice}`;
+              existingSale.sellingPrice = `${existingSale.sellingPrice} x ${sale.item.sellingPrice}`;
+              existingSale.profit = `${existingSale.profit} x ${sale.item.profit}`;
+              existingSale.category = `${existingSale.category} x ${sale.item.category}`;
+              existingSale.brand = `${existingSale.brand} x ${sale.item.brand}`;
+            }
+          });
+
+          const formattedSales = Array.from(salesMap.values()).slice(0, 10);
           setRecentSales(formattedSales);
         }
       } catch (error) {
@@ -107,10 +134,13 @@ const Dashboard = () => {
       }
     };
 
+ 
     fetchStockSummary();
     fetchRecentSales();
     fetchProfitLoss();
+
   }, []);
+
 
 
   const renderMenuItems = (items) => {
@@ -158,7 +188,12 @@ const Dashboard = () => {
       title: 'Quantity', 
       dataIndex: 'quantity', 
       key: 'quantity',
-      render: (text) => text || '0'
+      render: (text) => {
+        if (typeof text === 'string') {
+          return text;
+        }
+        return text || '0';
+      }
     },
     { 
       title: 'Purchase Price (Rs.)', 
@@ -185,6 +220,12 @@ const Dashboard = () => {
       render: (text) => text || 'N/A'
     },
     {
+      title: 'Time',
+      dataIndex: 'time',
+      key: 'time',
+      render: (text) => text || 'N/A'
+    },
+    {
       title: 'Status', 
       dataIndex: 'status', 
       key: 'status',
@@ -196,124 +237,211 @@ const Dashboard = () => {
     },
   ];
 
+  const StatisticCard = ({ title, value, icon, color, loading, prefix, suffix }) => (
+    <Card 
+      hoverable
+      bordered={false}
+      style={{ 
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        height: '100%'
+      }}
+    >
+      <Row align="middle" gutter={[16, 16]}>
+        <Col span={16}>
+          <Text type="secondary" style={{ fontSize: '14px' }}>{title}</Text>
+          <Statistic
+            value={loading ? '...' : value}
+            precision={2}
+            prefix={prefix}
+            suffix={suffix}
+            valueStyle={{ 
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#1f2937'
+            }}
+          />
+        </Col>
+        <Col span={8} style={{ textAlign: 'right' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '12px',
+            backgroundColor: `${color}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: 'auto'
+          }}>
+            {React.cloneElement(icon, { 
+              style: { 
+                fontSize: '24px',
+                color: color
+              }
+            })}
+          </div>
+        </Col>
+      </Row>
+    </Card>
+  );
+
+  const StockProgressCard = ({ title, value, total, color, icon }) => (
+    <Card 
+      hoverable
+      bordered={false}
+      style={{ 
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        height: '100%'
+      }}
+    >
+      <Row align="middle" gutter={[16, 16]}>
+        <Col span={16}>
+          <Text type="secondary" style={{ fontSize: '14px' }}>{title}</Text>
+          <Statistic
+            value={value}
+            suffix={`/ ${total}`}
+            valueStyle={{ 
+              fontSize: '24px',
+              fontWeight: 'bold',
+              color: '#1f2937'
+            }}
+          />
+          <Progress 
+            percent={Math.round((value / total) * 100)} 
+            showInfo={false}
+            strokeColor={color}
+            trailColor={`${color}15`}
+          />
+        </Col>
+        <Col span={8} style={{ textAlign: 'right' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '12px',
+            backgroundColor: `${color}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: 'auto'
+          }}>
+            {React.cloneElement(icon, { 
+              style: { 
+                fontSize: '24px',
+                color: color
+              }
+            })}
+          </div>
+        </Col>
+      </Row>
+    </Card>
+  );
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Content>
-          <div
-            style={{
-              padding: 24,
-              minHeight: 360,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
+        <div style={{ padding: '24px' }}>
+          <Title level={2} style={{ marginBottom: '24px' }}>Dashboard Overview</Title>
+          
+          {/* Summary Cards */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatisticCard
+                title="Total Stocks"
+                value={stockSummary.totalStocks}
+                icon={<AppstoreOutlined />}
+                color="#4ade80"
+                loading={loadingSummary}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatisticCard
+                title="Total Profit"
+                value={profitLossData.overallProfit}
+                icon={<DollarCircleOutlined />}
+                color="#facc15"
+                loading={loadingProfitLoss}
+                prefix="Rs. "
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatisticCard
+                title="Available Stocks"
+                value={stockSummary.totalAvailableStock}
+                icon={<MedicineBoxOutlined />}
+                color="#60a5fa"
+                loading={loadingSummary}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatisticCard
+                title="Expired Stocks"
+                value={stockSummary.totalExpired}
+                icon={<WarningOutlined />}
+                color="#ef4444"
+                loading={loadingSummary}
+              />
+            </Col>
+          </Row>
+
+          {/* Stock Progress Cards */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8}>
+              <StockProgressCard
+                title="Stock In Progress"
+                value={stockSummary.totalStockIn}
+                total={stockSummary.totalStocks}
+                icon={<PlusCircleOutlined />}
+                color="#4ade80"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <StockProgressCard
+                title="Stock Out Progress"
+                value={stockSummary.totalStockOut}
+                total={stockSummary.totalStocks}
+                icon={<MinusCircleOutlined />}
+                color="#facc15"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <StockProgressCard
+                title="Short Expiry Progress"
+                value={stockSummary.totalShortExpiry}
+                total={stockSummary.totalStocks}
+                icon={<WarningOutlined />}
+                color="#ef4444"
+              />
+            </Col>
+          </Row>
+
+          {/* Recent Sales Table */}
+          <Card 
+            bordered={false}
+            style={{ 
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
             }}
           >
-            {/* Dashboard Cards Section */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #4ade80', textAlign: 'center' }}
-                >
-                  <AppstoreOutlined style={{ fontSize: '40px', color: '#4ade80', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalStocks}</h3>
-                  
-                 
-                  <Button type="link" style={{ color: '#2c988c' }}>Total Stocks »</Button>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #facc15', textAlign: 'center' }}
-                >
-                  <FileTextOutlined style={{ fontSize: '40px', color: '#facc15', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingProfitLoss ? 'Loading...' : profitLossData.overallProfit}</h3>
-                  <Button type="link" className='text-3xl' style={{  color: '#b49200' }}>Profit</Button>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #60a5fa', textAlign: 'center' }}
-                >
-                  <MedicineBoxOutlined style={{ fontSize: '40px', color: '#60a5fa', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalAvailableStock}</h3>
-
-                  <Button type="link" className='text-3xl' style={{  color:'#333'}}>Available Stocks</Button>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #ef4444', textAlign: 'center' }}
-                >
-                  <BellOutlined style={{ fontSize: '40px', color: '#ef4444', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalExpired}</h3>
-                  <Button type="link" style={{ color: '#ef4444' }}>Expired Stocks</Button>
-                </Card>
-              </Col>
-            </Row>
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #4ade80', textAlign: 'center' }}
-                >
-                  <PlusCircleOutlined style={{ fontSize: '40px', color: '#4ade80', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalStockIn}</h3>
-                  
-                 
-                  <Button type="link" style={{ color: '#2c988c' }}>Stock In »</Button>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #facc15', textAlign: 'center' }}
-                >
-                  <MinusCircleOutlined style={{ fontSize: '40px', color: '#facc15', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalStockOut}</h3>
-                  <Button type="link" className='text-3xl' style={{  color: '#b49200' }}>Stock Out</Button>
-                </Card>
-              </Col>
-            
-              <Col xs={24} sm={12} md={12} lg={6}>
-                <Card 
-                  hoverable
-                  bordered={false}
-                  style={{ borderTop: '4px solid #ef4444', textAlign: 'center' }}
-                >
-                  <WarningOutlined style={{ fontSize: '40px', color: '#ef4444', marginBottom: '12px' }} />
-                  <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>{loadingSummary ? 'Loading...' : stockSummary.totalShortExpiry}</h3>
-                  <Button type="link" style={{ color: '#ef4444' }}>Short Expirey</Button>
-                </Card>
-              </Col>
-            </Row>
-
-            {/* Recent Sales Table */}
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '20px', marginTop: '40px' }}>Recent Sales</h2>
-            <Row>
-              <Col span={24}>
-                <Card bordered={false}>
-                  <Table
-                    columns={recentSalesColumns}
-                    dataSource={recentSales}
-                    loading={loadingSales}
-                    pagination={{ pageSize: 10 }}
-                    scroll={{ x: 'max-content' }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-           
-          </div>
-        </Content>
+            <Title level={4} style={{ marginBottom: '24px' }}>Recent Sales</Title>
+            <Table
+              columns={recentSalesColumns}
+              dataSource={recentSales}
+              loading={loadingSales}
+              pagination={{ 
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total) => `Total ${total} items`
+              }}
+              scroll={{ x: 'max-content' }}
+              style={{
+                borderRadius: '8px',
+                overflow: 'hidden'
+              }}
+            />
+          </Card>
+        </div>
+      </Content>
     </Layout>
   );
 };

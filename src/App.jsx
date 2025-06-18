@@ -45,7 +45,7 @@ function App() {
             </AdminLayout>
           </PrivateRoute>
         } />
-        <Route path='/inventory/:id' element={
+        <Route path='/medicine/:id' element={
           <PrivateRoute>
             <AdminLayout>
               <SpecificInventory />

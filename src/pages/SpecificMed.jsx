@@ -12,6 +12,7 @@ const SpecificMed = () => {
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [isSelling, setIsSelling] = useState(false);
+    const [selectedMedicines, setSelectedMedicines] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -56,8 +57,26 @@ const SpecificMed = () => {
         }));
     };
 
+    const handleAddToBulkSell = () => {
+        const newMedicine = {
+            medicineId: id,
+            quantity: parseInt(formData.quantity),
+            sellingPrice: parseInt(formData.price)
+        };
+        setSelectedMedicines(prev => [...prev, newMedicine]);
+        toast.success('Medicine added to bulk sell list');
+    };
+
+    const handleRemoveFromBulkSell = (index) => {
+        setSelectedMedicines(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSellClick = (e) => {
         e.preventDefault();
+        if (selectedMedicines.length === 0) {
+            toast.error('Please add at least one medicine to sell');
+            return;
+        }
         setShowModal(true);
     };
 
@@ -65,39 +84,24 @@ const SpecificMed = () => {
         setIsSelling(true);
         try {
             const response = await axios.post(`${BASE_URL}/api/sale/sell-med`, {
-                medicineId: id,
-                quantity: parseInt(formData.quantity),
-                sellingPrice: parseInt(formData.price)
+                medicines: selectedMedicines
             });
-
-            toast.success(response.data.msg)
 
             if (response.data.status) {
                 // Refresh the medicine data after successful sale
                 const updatedResponse = await axios.get(`${BASE_URL}/api/medicine/get-med/${id}`);
                 setMedicine(updatedResponse.data.medicine);
                 setBatch(updatedResponse.data.batches);
+                setSelectedMedicines([]);
                 setFormData(prev => ({
                     ...prev,
                     quantity: '1'
                 }));
 
-                toast('Successfully sold medicine!', {
-                    icon: '✅',
-                    style: {
-                        background: '#4ade80',
-                        color: '#fff',
-                    },
-                });
+                toast.success('Successfully sold medicines!');
             }
         } catch (err) {
-            toast('Error selling medicine!', {
-                icon: '❌',
-                style: {
-                    background: '#ef4444',
-                    color: '#fff',
-                },
-            });
+            toast.error('Error selling medicines!');
         } finally {
             setIsSelling(false);
             setShowModal(false);
@@ -145,7 +149,7 @@ const SpecificMed = () => {
                     />
                 </div>
 
-                {/* Edit Form */}
+                {/* Medicine Details Form */}
                 <form onSubmit={handleSellClick} className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
                     <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Medicine Details</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -182,29 +186,7 @@ const SpecificMed = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Category</label>
-                            <input
-                                type="text"
-                                name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                className="w-full p-2 border rounded-md text-sm sm:text-base"
-                                disabled
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Manufacturer</label>
-                            <input
-                                type="text"
-                                name="manufacturer"
-                                value={formData.manufacturer}
-                                onChange={handleInputChange}
-                                className="w-full p-2 border rounded-md text-sm sm:text-base"
-                                disabled
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Quantity to Sell</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Quantity</label>
                             <input
                                 type="number"
                                 name="quantity"
@@ -215,63 +197,58 @@ const SpecificMed = () => {
                                 max={batch?.[0]?.quantity || 0}
                             />
                         </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Description</label>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                rows="3"
-                                className="w-full p-2 border rounded-md text-sm sm:text-base"
-                                disabled
-                            />
-                        </div>
                     </div>
-                    <div className="mt-4 sm:mt-6">
+                    <div className="mt-4 sm:mt-6 flex justify-end space-x-2">
+                        <button
+                            type="button"
+                            onClick={handleAddToBulkSell}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base"
+                        >
+                            Add to Bulk Sell
+                        </button>
                         <button
                             type="submit"
-                            className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm sm:text-base"
+                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm sm:text-base"
+                            disabled={selectedMedicines.length === 0}
                         >
-                            Sell Medicine
+                            Sell Selected Medicines
                         </button>
                     </div>
                 </form>
 
-                {/* Batch Information */}
-                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-                    <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Batch Information</h2>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Number</th>
-                                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purchase Price</th>
-                                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {batch && batch.map((batch) => (
-                                    <tr key={batch._id}>
-                                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{batch.batchNumber}</td>
-                                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">{batch.quantity}</td>
-                                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">Rs. {batch.purchasePrice}</td>
-                                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                                            {new Date(batch.expiryDate).toLocaleDateString()}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                {/* Selected Medicines List */}
+                {selectedMedicines.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
+                        <h3 className="text-lg font-bold mb-4">Selected Medicines</h3>
+                        <div className="space-y-2">
+                            {selectedMedicines.map((med, index) => (
+                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                                    <div>
+                                        <span className="font-medium">{medicine.name}</span>
+                                        <span className="text-gray-600 ml-2">
+                                            (Qty: {med.quantity}, Price: Rs. {med.sellingPrice})
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleRemoveFromBulkSell(index)}
+                                        className="text-red-600 hover:text-red-800"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Confirmation Modal */}
                 {showModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-lg p-4 sm:p-6 max-w-sm w-full mx-4">
                             <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Confirm Sale</h3>
-                            <p className="mb-4 sm:mb-6 text-sm sm:text-base">Are you sure you want to sell {formData.quantity} unit(s) of {formData.name} for Rs. {formData.price}?</p>
+                            <p className="mb-4 sm:mb-6 text-sm sm:text-base">
+                                Are you sure you want to sell {selectedMedicines.length} medicine(s)?
+                            </p>
                             <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                                 <button
                                     onClick={handleCancelSell}

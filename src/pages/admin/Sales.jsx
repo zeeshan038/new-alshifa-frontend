@@ -33,6 +33,13 @@ const Sales = () => {
   const fetchSales = async () => {
     try {
       setLoading(true);
+      console.log({
+        page: pagination.current,
+        limit: pagination.pageSize,
+        name: searchText,
+        category: selectedCategory,
+        type: selectedType
+      });
       const response = await axios.get(`${BASE_URL}/api/sale/sales`, {
         params: {
           page: pagination.current,
@@ -43,8 +50,42 @@ const Sales = () => {
         }
       });
       if (response.data.status) {
-        setSalesData(response.data.sales);
-        // Update total count if available in response
+        // Group sales by _id
+        const salesMap = new Map();
+        
+        response.data.sales.forEach(sale => {
+          if (!salesMap.has(sale._id)) {
+            salesMap.set(sale._id, {
+              key: sale._id,
+              saleId: `S${salesMap.size + 1}`,
+              medicine: sale.medicine,
+              batchNumber: sale.batchNumber,
+              quantity: sale.item.quantitySold,
+              purchasePrice: sale.item.purchasePrice,
+              sellingPrice: sale.item.sellingPrice,
+              profit: sale.item.profit,
+              category: sale.item.category,
+              brand: sale.item.brand,
+              date: new Date(sale.createdAt).toLocaleDateString(),
+              time: new Date(sale.createdAt).toLocaleTimeString(),
+              status: 'Sold'
+            });
+          } else {
+            const existingSale = salesMap.get(sale._id);
+            existingSale.medicine = `${existingSale.medicine} x ${sale.medicine}`;
+            existingSale.batchNumber = `${existingSale.batchNumber} x ${sale.batchNumber}`;
+            existingSale.quantity = `${existingSale.quantity} x ${sale.item.quantitySold}`;
+            existingSale.purchasePrice = `${existingSale.purchasePrice} x ${sale.item.purchasePrice}`;
+            existingSale.sellingPrice = `${existingSale.sellingPrice} x ${sale.item.sellingPrice}`;
+            existingSale.profit = `${existingSale.profit} x ${sale.item.profit}`;
+            existingSale.category = `${existingSale.category} x ${sale.item.category}`;
+            existingSale.brand = `${existingSale.brand} x ${sale.item.brand}`;
+          }
+        });
+
+        const formattedSales = Array.from(salesMap.values());
+        setSalesData(formattedSales);
+        
         if (response.data.total) {
           setPagination(prev => ({
             ...prev,
@@ -65,7 +106,7 @@ const Sales = () => {
 
   const handleSearch = (value) => {
     setSearchText(value);
-    setPagination(prev => ({ ...prev, current: 1 })); // Reset to first page on search
+    setPagination(prev => ({ ...prev, current: 1 })); 
   };
 
   const handleCategoryChange = (value) => {
@@ -99,22 +140,22 @@ const Sales = () => {
     doc.setFontSize(10);
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
-    // Prepare table data
+    // Prepare table data (without category)
     const tableData = salesData.map((sale, index) => [
       index + 1,
-      sale.medicineId?.name || '',
-      sale.brand || '',
-      sale.batchId?.batchNumber || '',
-      sale.quantitySold || '',
-      `${sale.purchasePrice || 0}`,
-      `${sale.sellingPrice || 0}`,
-      `${sale.profit || 0}`,
-      new Date(sale.createdAt).toLocaleDateString(),
-      new Date(sale.createdAt).toLocaleTimeString(),
-      'SOLD'
+      sale.medicine,
+      sale.brand,
+      sale.batchNumber,
+      sale.quantity,
+      sale.purchasePrice,
+      sale.sellingPrice,
+      sale.profit,
+      sale.date,
+      sale.time,
+      sale.status
     ]);
 
-    // Add table to PDF
+    // Add table to PDF (without category)
     autoTable(doc, {
       head: [['S.No', 'Medicine Name', 'Brand', 'Batch Number', 'Quantity', 'Purchase Price', 'Selling Price', 'Profit', 'Date', 'Time', 'Status']],
       body: tableData,
@@ -135,62 +176,72 @@ const Sales = () => {
       width: 80,
       render: (_, __, index) => (pagination.current - 1) * pagination.pageSize + index + 1,
     },
-    {
-      title: 'Medicine Name',
-      dataIndex: ['medicineId', 'name'],
-      key: 'medicineName',
+    { 
+      title: 'Name', 
+      dataIndex: 'medicine', 
+      key: 'medicine',
+      render: (text) => text || 'N/A'
     },
-    {
-      title: 'Brand',
-      dataIndex: 'brand',
+    { 
+      title: 'Brand', 
+      dataIndex: 'brand', 
       key: 'brand',
+      render: (text) => text || 'N/A'
     },
-    {
-      title: 'Batch Number',
-      dataIndex: ['batchId', 'batchNumber'],
+    { 
+      title: 'Batch', 
+      dataIndex: 'batchNumber', 
       key: 'batchNumber',
+      render: (text) => text || 'N/A'
     },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantitySold',
+    { 
+      title: 'Quantity', 
+      dataIndex: 'quantity', 
       key: 'quantity',
+      render: (text) => {
+        if (typeof text === 'string') {
+          return text;
+        }
+        return text || '0';
+      }
     },
-    {
-      title: 'Purchase Price',
-      dataIndex: 'purchasePrice',
+    { 
+      title: 'Purchase Price (Rs.)', 
+      dataIndex: 'purchasePrice', 
       key: 'purchasePrice',
-      render: (price) => `Rs. ${price}`,
+      render: (price) => price ? `Rs. ${price}` : 'Rs. 0'
     },
-    {
-      title: 'Selling Price',
-      dataIndex: 'sellingPrice',
+    { 
+      title: 'Selling Price (Rs.)', 
+      dataIndex: 'sellingPrice', 
       key: 'sellingPrice',
-      render: (price) => `Rs. ${price}`,
+      render: (price) => price ? `Rs. ${price}` : 'Rs. 0'
     },
-    {
-      title: 'Profit',
-      dataIndex: 'profit',
+    { 
+      title: 'Profit (Rs.)', 
+      dataIndex: 'profit', 
       key: 'profit',
-      render: (profit) => `Rs. ${profit}`,
+      render: (profit) => profit ? `Rs. ${profit}` : 'Rs. 0'
     },
-    {
-      title: 'Date',
-      dataIndex: 'createdAt',
+    { 
+      title: 'Date', 
+      dataIndex: 'date', 
       key: 'date',
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (text) => text || 'N/A'
     },
     {
       title: 'Time',
-      dataIndex: 'createdAt',
+      dataIndex: 'time',
       key: 'time',
-      render: (date) => new Date(date).toLocaleTimeString(),
+      render: (text) => text || 'N/A'
     },
     {
-      title: 'Status',
+      title: 'Status', 
+      dataIndex: 'status', 
       key: 'status',
-      render: () => (
+      render: (status) => (
         <Tag color="green">
-          SOLD
+          {status ? status.toUpperCase() : 'N/A'}
         </Tag>
       ),
     },
