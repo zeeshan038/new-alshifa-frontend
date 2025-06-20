@@ -21,6 +21,20 @@ const ViewInventory = () => {
   const [medicines, setMedicines] = useState([]);
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingMedicines, setLoadingMedicines] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalMedicines, setTotalMedicines] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const itemsPerPage = 10;
+
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
   useEffect(() => {
     const fetchStockSummary = async () => {
@@ -33,13 +47,17 @@ const ViewInventory = () => {
         setLoadingSummary(false);
       }
     };
+    fetchStockSummary();
+  }, []);
 
+  useEffect(() => {
     const fetchMedicines = async () => {
       setLoadingMedicines(true);
       try {
-        const response = await axios.get(`${BASE_URL}/api/medicine/get-all-med`);
+        const response = await axios.get(`${BASE_URL}/api/medicine/get-all-med?page=${currentPage}&limit=${itemsPerPage}&name=${debouncedSearch}`);
         if (response.data.status) {
           setMedicines(response.data.medicines);
+          setTotalMedicines(response.data.totalCount || response.data.total || 0);
         }
       } catch (error) {
         console.error('Error fetching medicines:', error);
@@ -47,10 +65,8 @@ const ViewInventory = () => {
         setLoadingMedicines(false);
       }
     };
-
-    fetchStockSummary();
     fetchMedicines();
-  }, []);
+  }, [currentPage, debouncedSearch]);
 
   const handleView = async (medicineId) => {
     try {
@@ -188,13 +204,30 @@ const ViewInventory = () => {
         </Col>
       </Row>
 
+      {/* Search bar above table */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <input
+          type="text"
+          placeholder="Search medicines..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc', minWidth: 220 }}
+        />
+      </div>
+
       {/* Inventory Table */}
       <Card title="Medicine Inventory" bordered={false}>
         <Table
           columns={columns}
           dataSource={medicines}
           loading={loadingMedicines}
-          pagination={{ pageSize: 10 }}
+          pagination={{
+            current: currentPage,
+            pageSize: itemsPerPage,
+            total: totalMedicines,
+            onChange: (page) => setCurrentPage(page),
+            showSizeChanger: false
+          }}
           scroll={{ x: 'max-content' }}
           rowKey="_id"
         />

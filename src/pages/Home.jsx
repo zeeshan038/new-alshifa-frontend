@@ -134,6 +134,9 @@ const Home = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // Calculate total price of selected medicines
+  const totalPrice = selectedMedicines.reduce((sum, med) => sum + (med.quantity * med.sellingPrice), 0);
+
   return (
     <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4">
       <Toaster />
@@ -191,8 +194,22 @@ const Home = () => {
                           <input
                             type="number"
                             min="1"
+                            max={(() => {
+                              const med = medicines.find(m => m._id === medicine.medicineId);
+                              return med ? med.quantity : 1;
+                            })()}
                             value={medicine.quantity}
-                            onChange={(e) => handleUpdateQuantity(medicine.medicineId, parseInt(e.target.value))}
+                            onChange={(e) => {
+                              const med = medicines.find(m => m._id === medicine.medicineId);
+                              const maxQty = med ? med.quantity : 1;
+                              let newQty = parseInt(e.target.value);
+                              if (isNaN(newQty) || newQty < 1) newQty = 1;
+                              if (newQty > maxQty) {
+                                newQty = maxQty;
+                                toast.error(`You have only ${maxQty} in stock. You cannot increase it further.`);
+                              }
+                              handleUpdateQuantity(medicine.medicineId, newQty);
+                            }}
                             className="w-full p-1 border rounded text-sm sm:text-base"
                           />
                         </div>
@@ -210,7 +227,11 @@ const Home = () => {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4">
+                {/* Total Price */}
+                <div className="mt-4 mb-2 text-lg font-semibold text-center text-gray-800">
+                  Total Price: Rs. {totalPrice}
+                </div>
+                <div className="mt-2">
                   <button
                     onClick={handleSellMedicines}
                     disabled={isSelling}
@@ -218,6 +239,10 @@ const Home = () => {
                   >
                     {isSelling ? 'Processing...' : 'Sell Medicines'}
                   </button>
+                  <div className="mt-6 text-center">
+                    <div className="font-bold text-lg text-blue-900 tracking-wide">Al Shifa Pharmacy</div>
+                    <div className="text-gray-600 text-base font-mono">03159207853</div>
+                  </div>
                 </div>
               </>
             )}
@@ -230,7 +255,7 @@ const Home = () => {
       {error && <div className="text-center mt-4 text-red-500">Error loading medicines: {error.message || 'Unknown error'}</div>}
 
       {/* Medicine Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3  xl:grid-cols-4 gap-3 sm:gap-4">
         {loading ? (
           Array.from({ length: itemsPerPage }).map((_, index) => (
             <MedicineCardSkeleton key={index} />
