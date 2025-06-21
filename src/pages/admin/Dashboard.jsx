@@ -42,6 +42,8 @@ const Dashboard = () => {
   });
   const [loadingProfitLoss, setLoadingProfitLoss] = useState(true);
   const [profitLossError, setProfitLossError] = useState(null);
+  const [totalSales, setTotalSales] = useState(0);
+  const [loadingTotalSales, setLoadingTotalSales] = useState(true);
   const [previousMonthData, setPreviousMonthData] = useState({
     totalStocks: 0,
     overallProfit: 0,
@@ -123,10 +125,25 @@ const Dashboard = () => {
       }
     };
 
+    const fetchTotalSales = async () => {
+      try {
+        setLoadingTotalSales(true);
+        const response = await axios.get(`${BASE_URL}/api/sale/salesNo`);
+        if (response.data.status) {
+          setTotalSales(response.data.totalSalesAmount || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching total sales:', error);
+      } finally {
+        setLoadingTotalSales(false);
+      }
+    };
+
  
     fetchStockSummary();
     fetchRecentSales();
     fetchProfitLoss();
+    fetchTotalSales();
 
   }, []);
 
@@ -332,6 +349,16 @@ const Dashboard = () => {
           
           {/* Summary Cards */}
           <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatisticCard
+                title="Total Sales"
+                value={totalSales}
+                icon={<DollarCircleOutlined />}
+                color="#10b981"
+                loading={loadingTotalSales}
+                prefix="Rs. "
+              />
+            </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
               <StatisticCard
                 title="Total Stocks"

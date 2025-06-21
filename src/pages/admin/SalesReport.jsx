@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Card, Row, Col, theme } from 'antd';
-import { DollarCircleOutlined, LineChartOutlined } from '@ant-design/icons';
+import { DollarCircleOutlined, LineChartOutlined, ShoppingCartOutlined, BarChartOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { BASE_URL } from '../../constant';
@@ -17,6 +17,14 @@ const SalesReport = () => {
   });
   const [loadingProfitLoss, setLoadingProfitLoss] = useState(true);
   const [profitLossError, setProfitLossError] = useState(null);
+
+  const [salesData, setSalesData] = useState({
+    daily: { amount: 0, items: 0, count: 0 },
+    monthly: { amount: 0, items: 0, count: 0 },
+    overall: { amount: 0, items: 0, count: 0 }
+  });
+  const [loadingSales, setLoadingSales] = useState(true);
+  const [salesError, setSalesError] = useState(null);
 
   const [monthlyData, setMonthlyData] = useState([]);
   const [loadingMonthlyData, setLoadingMonthlyData] = useState(true);
@@ -39,6 +47,24 @@ const SalesReport = () => {
       }
     };
     fetchProfitLoss();
+  }, []);
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        setLoadingSales(true);
+        const response = await axios.get(`${BASE_URL}/api/sale/sales-amount`);
+        if (response.data.status) {
+          setSalesData(response.data);
+        }
+      } catch (error) {
+        setSalesError('Error fetching sales data');
+        console.error('Error fetching sales data:', error);
+      } finally {
+        setLoadingSales(false);
+      }
+    };
+    fetchSalesData();
   }, []);
 
   useEffect(() => {
@@ -111,6 +137,138 @@ const SalesReport = () => {
         borderRadius: borderRadiusLG,
       }}
     >
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '20px' }}>Sales Report</h2>
+      
+      {/* Sales Summary Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
+        {/* Daily Sales Row */}
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #3b82f6', textAlign: 'center' }}
+          >
+            <DollarCircleOutlined style={{ fontSize: '40px', color: '#3b82f6', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              Rs. {loadingSales ? 'Loading...' : salesData.daily.amount}
+            </h3>
+            <p style={{ color: '#666' }}>Daily Sales</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #8b5cf6', textAlign: 'center' }}
+          >
+            <ShoppingCartOutlined style={{ fontSize: '40px', color: '#8b5cf6', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.daily.items}
+            </h3>
+            <p style={{ color: '#666' }}>Daily Items Sold</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #10b981', textAlign: 'center' }}
+          >
+            <BarChartOutlined style={{ fontSize: '40px', color: '#10b981', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.daily.count}
+            </h3>
+            <p style={{ color: '#666' }}>Daily Transactions</p>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
+        {/* Monthly Sales Row */}
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #f59e0b', textAlign: 'center' }}
+          >
+            <DollarCircleOutlined style={{ fontSize: '40px', color: '#f59e0b', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              Rs. {loadingSales ? 'Loading...' : salesData.monthly.amount}
+            </h3>
+            <p style={{ color: '#666' }}>Monthly Sales</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #ec4899', textAlign: 'center' }}
+          >
+            <ShoppingCartOutlined style={{ fontSize: '40px', color: '#ec4899', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.monthly.items}
+            </h3>
+            <p style={{ color: '#666' }}>Monthly Items Sold</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #06b6d4', textAlign: 'center' }}
+          >
+            <BarChartOutlined style={{ fontSize: '40px', color: '#06b6d4', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.monthly.count}
+            </h3>
+            <p style={{ color: '#666' }}>Monthly Transactions</p>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: '30px' }}>
+        {/* Overall Sales Row */}
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #dc2626', textAlign: 'center' }}
+          >
+            <DollarCircleOutlined style={{ fontSize: '40px', color: '#dc2626', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              Rs. {loadingSales ? 'Loading...' : salesData.overall.amount}
+            </h3>
+            <p style={{ color: '#666' }}>Total Sales</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #7c3aed', textAlign: 'center' }}
+          >
+            <ShoppingCartOutlined style={{ fontSize: '40px', color: '#7c3aed', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.overall.items}
+            </h3>
+            <p style={{ color: '#666' }}>Total Items Sold</p>
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            hoverable
+            bordered={false}
+            style={{ borderTop: '4px solid #059669', textAlign: 'center' }}
+          >
+            <BarChartOutlined style={{ fontSize: '40px', color: '#059669', marginBottom: '12px' }} />
+            <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
+              {loadingSales ? 'Loading...' : salesData.overall.count}
+            </h3>
+            <p style={{ color: '#666' }}>Total Transactions</p>
+          </Card>
+        </Col>
+      </Row>
+
       <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', marginBottom: '20px' }}>Profit and Loss</h2>
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8} lg={4}>
