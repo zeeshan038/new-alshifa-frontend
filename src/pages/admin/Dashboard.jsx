@@ -44,6 +44,11 @@ const Dashboard = () => {
   const [profitLossError, setProfitLossError] = useState(null);
   const [totalSales, setTotalSales] = useState(0);
   const [loadingTotalSales, setLoadingTotalSales] = useState(true);
+  const [totalStockValue, setTotalStockValue] = useState(0);
+  const [loadingStockValue, setLoadingStockValue] = useState(true);
+  const [availableValue, setAvailableValue] = useState(0);
+  const [loadingAvailableValue, setLoadingAvailableValue] = useState(true);
+  const [categoryBreakdown, setCategoryBreakdown] = useState([]);
   const [previousMonthData, setPreviousMonthData] = useState({
     totalStocks: 0,
     overallProfit: 0,
@@ -139,11 +144,41 @@ const Dashboard = () => {
       }
     };
 
- 
+    const fetchTotalStockValue = async () => {
+      try {
+        setLoadingStockValue(true);
+        const response = await axios.get(`${BASE_URL}/api/stock/stocks-value`);
+        if (response.data.status) {
+          setTotalStockValue(response.data.totalStockValue || 0);
+          setCategoryBreakdown(response.data.categoryBreakdown || []);
+        }
+      } catch (error) {
+        console.error('Error fetching total stock value:', error);
+      } finally {
+        setLoadingStockValue(false);
+      }
+    };
+
+    const fetchAvailableValue = async () => {
+      try {
+        setLoadingAvailableValue(true);
+        const response = await axios.get(`${BASE_URL}/api/stock/available-value`);
+        if (response.data.status) {
+          setAvailableValue(response.data.availablePurchaseValue || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching available value:', error);
+      } finally {
+        setLoadingAvailableValue(false);
+      }
+    };
+
     fetchStockSummary();
     fetchRecentSales();
     fetchProfitLoss();
     fetchTotalSales();
+    fetchTotalStockValue();
+    fetchAvailableValue();
 
   }, []);
 
@@ -347,9 +382,9 @@ const Dashboard = () => {
         <div style={{ padding: '24px' }}>
           <Title level={2} style={{ marginBottom: '24px' }}>Dashboard Overview</Title>
           
-          {/* Summary Cards */}
+          {/* Summary Cards - Row 1 */}
           <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={8}>
               <StatisticCard
                 title="Total Sales"
                 value={totalSales}
@@ -359,7 +394,31 @@ const Dashboard = () => {
                 prefix="Rs. "
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={8}>
+              <StatisticCard
+                title="Total Stocks Value"
+                value={totalStockValue}
+                icon={<DollarCircleOutlined />}
+                color="#6366f1"
+                loading={loadingStockValue}
+                prefix="Rs. "
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={8}>
+              <StatisticCard
+                title="Total Available Value"
+                value={availableValue}
+                icon={<DollarCircleOutlined />}
+                color="#f59e42"
+                loading={loadingAvailableValue}
+                prefix="Rs. "
+              />
+            </Col>
+          </Row>
+
+          {/* Summary Cards - Row 2 */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8} lg={8}>
               <StatisticCard
                 title="Total Stocks"
                 value={stockSummary.totalStocks}
@@ -368,17 +427,7 @@ const Dashboard = () => {
                 loading={loadingSummary}
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <StatisticCard
-                title="Total Profit"
-                value={profitLossData.overallProfit}
-                icon={<DollarCircleOutlined />}
-                color="#facc15"
-                loading={loadingProfitLoss}
-                prefix="Rs. "
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={8}>
               <StatisticCard
                 title="Available Stocks"
                 value={stockSummary.totalAvailableStock}
@@ -387,13 +436,27 @@ const Dashboard = () => {
                 loading={loadingSummary}
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={8}>
               <StatisticCard
                 title="Expired Stocks"
                 value={stockSummary.totalExpired}
                 icon={<WarningOutlined />}
                 color="#ef4444"
                 loading={loadingSummary}
+              />
+            </Col>
+          </Row>
+
+          {/* Summary Cards - Row 3 */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '24px' }}>
+            <Col xs={24} sm={12} md={8} lg={8}>
+              <StatisticCard
+                title="Total Profit"
+                value={profitLossData.overallProfit}
+                icon={<DollarCircleOutlined />}
+                color="#facc15"
+                loading={loadingProfitLoss}
+                prefix="Rs. "
               />
             </Col>
           </Row>
@@ -452,6 +515,29 @@ const Dashboard = () => {
                 borderRadius: '8px',
                 overflow: 'hidden'
               }}
+            />
+          </Card>
+
+          {/* Category Breakdown Table */}
+          <Card
+            bordered={false}
+            style={{
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              marginTop: '24px'
+            }}
+          >
+            <Title level={4} style={{ marginBottom: '24px' }}>Stock Value by Category</Title>
+            <Table
+              columns={[
+                { title: 'Category', dataIndex: 'category', key: 'category', align: 'center' },
+                { title: 'Value (Rs.)', dataIndex: 'value', key: 'value', align: 'center', render: (v) => `Rs. ${v}` },
+                { title: 'Items', dataIndex: 'items', key: 'items', align: 'center' },
+              ]}
+              dataSource={categoryBreakdown.map((row, idx) => ({ ...row, key: idx }))}
+              loading={loadingStockValue}
+              pagination={false}
+              style={{ borderRadius: '8px', overflow: 'hidden' }}
             />
           </Card>
         </div>
