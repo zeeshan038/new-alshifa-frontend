@@ -26,60 +26,78 @@ function App() {
     <div>
       {!hideNavbar && <Navbar />}
       <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/medicine/:id' element={<SpecificMed />} />
+        {/* Public routes */}
         <Route path='/signup' element={<Signup />} />
         <Route path='/login' element={<Login />} />
-        {/* admin  */}
+        
+        {/* Protected routes */}
+        <Route path='/' element={
+          <PrivateRoute>
+            <Home />
+          </PrivateRoute>
+        } />
+        <Route path='/medicine/:id' element={
+          <PrivateRoute>
+            <SpecificMed />
+          </PrivateRoute>
+        } />
+        
+        {/* Admin protected routes */}
         <Route path='/dashboard' element={
-          
+          <PrivateRoute>
             <AdminLayout>
               <Dashboard />
             </AdminLayout>
-        
+          </PrivateRoute>
         } />
         <Route path='/inventory' element={
+          <PrivateRoute>
             <AdminLayout>
               <ViewInventory />
             </AdminLayout>
+          </PrivateRoute>
         } />
         <Route path='/inventory/:id' element={
+          <PrivateRoute>
             <AdminLayout>
               <SpecificInventory />
             </AdminLayout>
+          </PrivateRoute>
         } />
         <Route path='/inventory/add' element={
+          <PrivateRoute>
             <AdminLayout>
               <AddProduct />
             </AdminLayout>
-          
+          </PrivateRoute>
         } />
-
         <Route path='/sales' element={
-          
+          <PrivateRoute>
             <AdminLayout>
               <SalesReport />
             </AdminLayout>
-          
+          </PrivateRoute>
         } />
-
         <Route path='/total-sales' element={
-          
+          <PrivateRoute>
             <AdminLayout>
               <Sales />
             </AdminLayout>
-          
+          </PrivateRoute>
         } />
-
         <Route path='/short-expirey' element={
+          <PrivateRoute>
             <AdminLayout>
               <ShortExpirey/>
-            </AdminLayout> 
+            </AdminLayout>
+          </PrivateRoute>
         } />
         <Route path='/expired' element={
+          <PrivateRoute>
             <AdminLayout>
               <Expired/>
             </AdminLayout>
+          </PrivateRoute>
         } />
       </Routes>
       <Toaster />
