@@ -103,11 +103,11 @@ const Login = () => {
             </Button>
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0 }}>
+{/*           <Form.Item style={{ marginBottom: 0 }}>
             <Button type="link" block onClick={() => navigate('/signup')}>
               If you are new, Sign Up
             </Button>
-          </Form.Item>
+          </Form.Item> */}
         </Form>
       </Card>
     </div>
